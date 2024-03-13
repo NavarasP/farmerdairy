@@ -4,17 +4,38 @@ const Transaction = require("../models/transactions.model");
 const AppError = require("../utils/appError");
 const catchAsyncError = require("../utils/catchAsyncError");
 const { createTransactionSchema } = require("../validations/agent.schema");
+const User = require("../models/user.model");
 
 module.exports = {
+    fetchfarmers: catchAsyncError(async (req, res, next) => {
+        const keyword = req.query.search
+            ? {
+                  $or: [
+                      { name: { $regex: req.query.search, $options: "i" } },
+                      { email: { $regex: req.query.search, $options: "i" } },
+                  ],
+              }
+            : {};
+
+        const users = await User.find({
+            agent: req.user._id,
+            ...keyword,
+        });
+
+        res.status(200).json({
+            status: true,
+            data: users,
+        });
+    }),
     getReportsToday: catchAsyncError(async (req, res, next) => {
-        if (!isValidObjectId(req.params.id)) {
+        if (!isValidObjectId(req.params.farmerId)) {
             return next(new AppError("Invalid Id. Please try again", 400));
         }
         const today = new Date();
         const dayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
 
         const report = await FarmReport.findOne({
-            farmer: req.params.id,
+            farmer: req.params.farmerId,
             createdAt: { $gt: dayStart },
         }).lean();
 
@@ -28,12 +49,12 @@ module.exports = {
         });
     }),
     acknowledgeReport: catchAsyncError(async (req, res, next) => {
-        if (!isValidObjectId(req.params.id)) {
+        if (!isValidObjectId(req.params.reportId)) {
             return next(new AppError("Invalid Id. Please try again", 400));
         }
 
         const report = await FarmReport.findByIdAndUpdate(
-            req.params.id,
+            req.params.reportId,
             { isAcknowledged: true },
             {
                 new: true,

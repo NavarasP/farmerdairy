@@ -5,8 +5,41 @@ const Transaction = require("../models/transactions.model");
 const AppError = require("../utils/appError");
 const catchAsyncError = require("../utils/catchAsyncError");
 const { farmerReportSubmitSchema } = require("../validations/farmer.schema");
+const User = require("../models/user.model");
 
 module.exports = {
+    fetchCoFarmersAndAgent: catchAsyncError(async (req, res, next) => {
+        const keyword = req.query.search
+            ? {
+                  $or: [
+                      { name: { $regex: req.query.search, $options: "i" } },
+                      { email: { $regex: req.query.search, $options: "i" } },
+                  ],
+              }
+            : {};
+
+        const users = await User.find({
+            $and: [
+                {
+                    $or: [
+                        {
+                            _id: req.user.agent,
+                        },
+                        {
+                            _id: { $ne: req.user._id },
+                            agent: req.user.agent,
+                        },
+                    ],
+                },
+                keyword,
+            ],
+        });
+
+        res.status(200).json({
+            status: true,
+            data: users,
+        });
+    }),
     listFarms: catchAsyncError(async (req, res, next) => {
         const farms = await Farm.find({ farmer: req.user._id }).select("area").lean();
 
@@ -64,8 +97,14 @@ module.exports = {
     createFarmReport: catchAsyncError(async (req, res, next) => {
         const { _, error } = farmerReportSubmitSchema.validate(req.body);
 
-        if (!isValidObjectId(req.params.id)) {
+        if (!isValidObjectId(req.params.farmId)) {
             return next(new AppError("Invalid Id. Please try again", 400));
+        }
+
+        const isFarm = await Farm.findById(req.params.farmId);
+        
+        if (!isFarm) {
+            return next(new AppError("No farm found with provided ID", 400));
         }
 
         if (error) {
@@ -77,7 +116,7 @@ module.exports = {
         const report = await FarmReport.create({
             ...req.body,
             farmer: req.user._id,
-            farm: req.params.id,
+            farm: req.params.farmId,
         }).then((rprt) => rprt.populate("farmer farm"));
 
         if (!report) {
@@ -91,7 +130,6 @@ module.exports = {
     }),
 
     listFarmReports: catchAsyncError(async (req, res, next) => {
-
         if (!isValidObjectId(req.params.id)) {
             return next(new AppError("Invalid Id. Please try again", 400));
         }
