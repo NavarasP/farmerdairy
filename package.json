@@ -1,6 +1,5 @@
 {
-    "name": "AGRI-project",
-    "version": "1.0.0",
+    "name": "AGRI-project",    "version": "1.0.0",
     "description": "Agriculture data recording software",
     "main": "index.js",
     "scripts": {

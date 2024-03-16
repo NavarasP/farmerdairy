@@ -8,7 +8,7 @@ process.on("uncaughtException", (err) => {
 const { app } = require("./app");
 const { connectMongoDB } = require("./config/dbConfig");
 
-const PORT = process.env.PORT || 8080;
+const PORT = process.env.PORT || '192.168.1.4:8080';
 
 connectMongoDB();
 
