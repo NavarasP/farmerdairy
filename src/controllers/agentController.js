@@ -48,6 +48,26 @@ module.exports = {
             data: report,
         });
     }),
+    
+    getReports: catchAsyncError(async (req, res, next) => {
+        if (!isValidObjectId(req.params.farmerId)) {
+            return next(new AppError("Invalid Id. Please try again", 400));
+        }
+    
+        const reports = await FarmReport.find({
+            farmer: req.params.farmerId,
+        }).lean();
+    
+        if (!reports || reports.length === 0) {
+            return next(new AppError("There are no reports found for this farmer", 404));
+        }
+    
+        res.status(200).json({
+            status: "success",
+            data: reports,
+        });
+    }),
+    
     acknowledgeReport: catchAsyncError(async (req, res, next) => {
         if (!isValidObjectId(req.params.reportId)) {
             return next(new AppError("Invalid Id. Please try again", 400));

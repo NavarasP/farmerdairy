@@ -40,6 +40,8 @@ module.exports = {
             data: users,
         });
     }),
+
+
     listFarms: catchAsyncError(async (req, res, next) => {
         const farms = await Farm.find({ farmer: req.user._id }).select("area").lean();
 
@@ -64,70 +66,52 @@ module.exports = {
         });
     }),
 
-    updateFarmData: catchAsyncError(async (req, res, next) => {
-        const { area } = req.body;
-
-        if (!isValidObjectId(req.params.id)) {
-            return next(new AppError("Invalid Id. Please try again", 400));
-        }
-
-        if (!area) {
-            return next(new AppError("Area of farm cannot be empty", 400));
-        }
-
-        const farm = await Farm.findByIdAndUpdate(
-            req.params.id,
-            { area: area, farmer: req.user._id },
-            {
-                new: true,
-                runValidators: true,
-            }
-        );
-
-        if (!farm) {
-            return next(new AppError("The farm is not found", 404));
-        }
-
-        res.status(200).json({
-            status: "success",
-            data: farm,
-        });
-    }),
-
     createFarmReport: catchAsyncError(async (req, res, next) => {
         const { _, error } = farmerReportSubmitSchema.validate(req.body);
-
+    
         if (!isValidObjectId(req.params.farmId)) {
+            console.log("Invalid farm ID");
             return next(new AppError("Invalid Id. Please try again", 400));
+        } else {
+            console.log("Valid farm ID");
         }
-
+    
         const isFarm = await Farm.findById(req.params.farmId);
-        
+    
         if (!isFarm) {
+            console.log("No farm found with provided ID");
             return next(new AppError("No farm found with provided ID", 400));
+        } else {
+            console.log("Farm found");
         }
-
+    
         if (error) {
+            console.log("Validation error:", error);
             return next(
                 new AppError(error.details ? error?.details[0]?.message : error?.message, 400)
             );
         }
-
+    
         const report = await FarmReport.create({
             ...req.body,
             farmer: req.user._id,
             farm: req.params.farmId,
         }).then((rprt) => rprt.populate("farmer farm"));
-
+    
         if (!report) {
+            console.log("Creating record failed.");
             return next(new AppError("Creating record failed.", 500));
         }
-
+    
+        console.log("Farm report created successfully:", report);
+    
         res.status(201).json({
             status: "success",
             data: report,
         });
     }),
+    
+
 
     listFarmReports: catchAsyncError(async (req, res, next) => {
         if (!isValidObjectId(req.params.id)) {
@@ -156,6 +140,8 @@ module.exports = {
         });
     }),
 
+
+    
     listTransactions: catchAsyncError(async (req, res, next) => {
         const transaction = await Transaction.find({ farmer: req.user._id })
             .select("-__v -agent -farmer")
@@ -170,4 +156,7 @@ module.exports = {
             data: transaction,
         });
     }),
+
+
+
 };
