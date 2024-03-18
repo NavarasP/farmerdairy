@@ -119,6 +119,27 @@ module.exports = {
         });
     }),
 
+    
+    getName: catchAsyncError(async (req, res, next) => {
+        // Finding the user with the user ID provided in the request parameters
+        const user = await User.findById(req.params.id);
+    
+        // If no user is found, return an error
+        if (!user) {
+            return next(new AppError("User not found", 404));
+        }
+    
+        // Sending the user's email as a response
+        res.status(200).json({
+            status: "success",
+            data: user.email,
+        });
+    }),
+    
+
+
+
+
     listAgents: catchAsyncError(async (req, res, next) => {
         // listing all agents present user table.
         // finding with role  === agent

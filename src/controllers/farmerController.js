@@ -119,7 +119,6 @@ module.exports = {
         }
 
         const reports = await FarmReport.find({
-            farmer: req.user._id,
             farm: req.params.id,
         })
             .sort("createdAt")
